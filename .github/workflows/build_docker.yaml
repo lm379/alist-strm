@@ -15,18 +15,17 @@ jobs:
         with:
           submodules: 'true'
 
-      # 配置多架构构建环境
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker Buildx and create new builder
         uses: docker/setup-buildx-action@v2
         with:
+          create: true
           driver: docker-container
           driver-opts: |
             image=moby/buildkit:master
 
-      # 阿里云容器镜像登录
       - name: Login to Aliyun ACR
         uses: aliyun/acr-login@v1
         with:
@@ -35,12 +34,13 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      # 多平台构建推送
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
           context: .
           push: true
+          # Specify the platforms you want to build for  
+          # (ensure that QEMU supports all these architectures):
           platforms: linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6
           tags: |
             crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com/lm379/alist-strm:latest
