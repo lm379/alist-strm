@@ -48,7 +48,7 @@
 #### 命令行版本：
 
 ```shell
-docker run -d --name alist-strm -p 18080:5000 -v /home:/home  - /volume1/alist-strm/config:/config  itefuir/alist-strm:latest
+docker run -d --name alist-strm -p 18080:5000 -v /home:/home  -v /volume1/alist-strm/config:/config  itefuir/alist-strm:latest
 
 #18080是宿主机端口 不是一定要这个 容器端口5000是一定要的
 #/home是本地路径
