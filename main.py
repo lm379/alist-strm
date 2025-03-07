@@ -236,7 +236,7 @@ def create_strm_file(file_name, file_size, config, video_formats, local_director
     else:
         if config['public_host'] is not None:
             http_link = f"{config['public_protocol']}://{config['public_host']}:{config['public_port']}/d{clean_file_name}"
-        else
+        else:
             http_link = f"{config['protocol']}://{config['host']}:{config['port']}/d{clean_file_name}"
 
     decoded_file_name = unquote(file_name).replace('/dav/', '')  # 解码为中文
