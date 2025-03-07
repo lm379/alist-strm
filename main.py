@@ -235,7 +235,7 @@ def create_strm_file(file_name, file_size, config, video_formats, local_director
             http_link = f"{config['protocol']}://{encoded_username}:{encoded_password}@{config['host']}:{config['port']}/dav{clean_file_name}"
     else:
         if config['public_host'] is not None:
-            http_link = f"config['public_protocol']://{config['public_host']}:{config['public_port']}/d{clean_file_name}"
+            http_link = f"{config['public_protocol']}://{config['public_host']}:{config['public_port']}/d{clean_file_name}"
         else
             http_link = f"{config['protocol']}://{config['host']}:{config['port']}/d{clean_file_name}"
 
