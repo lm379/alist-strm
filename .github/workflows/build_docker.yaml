@@ -1,36 +1,30 @@
-name: actions
+name: Docker Build
 
-on: [push, pull_request]
-
-env:
-  REGISTRY: 'crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com/lm379/alist-strm' # 阿里云镜像地址
-  RELEASE_PLATFORMS: 'linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6'    # 目标平台列表
-  IMAGE_PUSH: true                                             # 总是启用推送
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  build_docker:
-    if: ${{ github.ref == 'refs/heads/main' }}
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'true'
 
-      # 初始化多架构构建环境
+      # 配置多架构构建环境
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
         with:
           driver: docker-container
           driver-opts: |
             image=moby/buildkit:master
-
-      # 创建并激活构建器
-      - name: Create builder instance
-        run: |
-          docker buildx create --name multiarch --use
-          docker buildx inspect --bootstrap
 
       # 阿里云容器镜像登录
       - name: Login to Aliyun ACR
@@ -41,22 +35,15 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      # 生成动态镜像标签
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}
-          tags: |
-            type=raw,value=latest
-
-      # 执行多平台构建推送
+      # 多平台构建推送
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v3
         with:
           context: .
-          push: ${{ env.IMAGE_PUSH }}
-          tags: ${{ steps.meta.outputs.tags }}
-          platforms: ${{ env.RELEASE_PLATFORMS }}
+          push: true
+          platforms: linux/amd64,linux/arm64,linux/arm/v7  # 修正arm架构写法
+          tags: |
+            crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com/lm379/alist-strm:latest
+          # 启用构建缓存加速
           cache-from: type=gha
           cache-to: type=gha,mode=max
