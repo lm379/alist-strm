@@ -1,38 +1,47 @@
 name: actions
 
-on: [push, pull_request] 
+on: [push, pull_request]
 
 jobs:
-  build_docker:
-    if: ${{ github.ref == 'refs/heads/main' }} 
+  bt-product-release:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    
-    # 设置跨平台构建环境
+
+    # 设置多平台构建环境
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
-    
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
       with:
-        driver-opts: |
+        # 创建支持多平台构建的builder实例
+        driver: docker-container
+        driver-options: |
           image=moby/buildkit:master
-    
-    - name: Login to Aliyun Container Registry (ACR)
+        install: true
+
+    # 显式创建支持多平台的构建器
+    - name: Create multiarch builder
+      run: |
+        docker buildx create --name multiarch --driver docker-container --use
+        docker buildx inspect --bootstrap
+
+    - name: Login to ACR
       uses: aliyun/acr-login@v1
       with:
-        login-server: crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com 
-        region-id: cn-chengdu 
+        login-server: crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com
+        region-id: cn-chengdu
         username: "${{ secrets.REGISTRY_USERNAME }}"
         password: "${{ secrets.REGISTRY_PASSWORD }}"
-    
+
     - name: Build and Push Multi-arch Docker Image
       env:
         IMAGE_TAG: latest
       run: |
         docker buildx build \
-          --platform linux/amd64,linux/arm64 \
+          --platform linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6 \
           -t crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG \
           --push \
           .
