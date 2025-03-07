@@ -2,46 +2,61 @@ name: actions
 
 on: [push, pull_request]
 
+env:
+  REGISTRY: 'crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com/lm379/alist-strm' # 阿里云镜像地址
+  RELEASE_PLATFORMS: 'linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6'    # 目标平台列表
+  IMAGE_PUSH: true                                             # 总是启用推送
+
 jobs:
-  bt-product-release:
+  build_docker:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # 设置多平台构建环境
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+      # 初始化多架构构建环境
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-      with:
-        # 创建支持多平台构建的builder实例
-        driver: docker-container
-        driver-options: |
-          image=moby/buildkit:master
-        install: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          driver-opts: |
+            image=moby/buildkit:master
 
-    # 显式创建支持多平台的构建器
-    - name: Create multiarch builder
-      run: |
-        docker buildx create --name multiarch --driver docker-container --use
-        docker buildx inspect --bootstrap
+      # 创建并激活构建器
+      - name: Create builder instance
+        run: |
+          docker buildx create --name multiarch --use
+          docker buildx inspect --bootstrap
 
-    - name: Login to ACR
-      uses: aliyun/acr-login@v1
-      with:
-        login-server: crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com
-        region-id: cn-chengdu
-        username: "${{ secrets.REGISTRY_USERNAME }}"
-        password: "${{ secrets.REGISTRY_PASSWORD }}"
+      # 阿里云容器镜像登录
+      - name: Login to Aliyun ACR
+        uses: aliyun/acr-login@v1
+        with:
+          login-server: crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com
+          region-id: cn-chengdu
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
 
-    - name: Build and Push Multi-arch Docker Image
-      env:
-        IMAGE_TAG: latest
-      run: |
-        docker buildx build \
-          --platform linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6 \
-          -t crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG \
-          --push \
-          .
+      # 生成动态镜像标签
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}
+          tags: |
+            type=raw,value=latest
+
+      # 执行多平台构建推送
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ env.IMAGE_PUSH }}
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: ${{ env.RELEASE_PLATFORMS }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
