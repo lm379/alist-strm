@@ -20,4 +20,4 @@ jobs:
         IMAGE_TAG: latest # 用于标记容器版本号
       run: |
         docker build -t registry.cn-chengdu.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG .
-        docker push registry.ch-chengdu.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG
+        docker push registry.cn-chengdu.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG
