@@ -3,21 +3,36 @@ name: actions
 on: [push, pull_request] 
 
 jobs:
-  bt-product-release:
+  build_docker:
     if: ${{ github.ref == 'refs/heads/main' }} 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2 
-    - name: Login to Aliyun Container Registry (ACR)
-      uses: aliyun/acr-login@v1 # 使用阿里云镜像服务action
+    - uses: actions/checkout@v2
+    
+    # 设置跨平台构建环境
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
       with:
-        login-server: registry.cn-chengdu.aliyuncs.com 
+        driver-opts: |
+          image=moby/buildkit:master
+    
+    - name: Login to Aliyun Container Registry (ACR)
+      uses: aliyun/acr-login@v1
+      with:
+        login-server: crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com 
         region-id: cn-chengdu 
-        username: "${{ secrets.REGISTRY_USERNAME }}" # 引用GitHub repo设置的镜像容器服务用户名
-        password: "${{ secrets.REGISTRY_PASSWORD }}" # 引用GitHub repo设置的镜像容器服务密码
-    - name: Build and Push Docker Image
+        username: "${{ secrets.REGISTRY_USERNAME }}"
+        password: "${{ secrets.REGISTRY_PASSWORD }}"
+    
+    - name: Build and Push Multi-arch Docker Image
       env:
-        IMAGE_TAG: latest # 用于标记容器版本号
+        IMAGE_TAG: latest
       run: |
-        docker build -t registry.cn-chengdu.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG .
-        docker push registry.cn-chengdu.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG
+        docker buildx build \
+          --platform linux/amd64,linux/arm64,linux/arm32 \
+          -t crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG \
+          --push \
+          .
