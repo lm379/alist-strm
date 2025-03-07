@@ -25,7 +25,7 @@ IMAGE_FOLDER = 'static/images'
 
 db_handler = DBHandler()
 
-local_version = "6.0.6"
+local_version = "6.0.9"
 
 
 
@@ -285,8 +285,10 @@ def edit_config(config_id):
 
             config_name = request.form['config_name']
             url = request.form['url']
+            public_url = request.form['public_url']
             username = request.form['username']
             password = request.form['password']
+            sign_enabled = int(request.form.get('sign_enabled', 0)) # 获取是否启用AList的签名功能，默认0（禁用）
             rootpath = request.form['rootpath']
             target_directory = request.form['target_directory']
             download_interval_range = request.form.get('download_interval_range', '1-3')  # 保持为字符串
@@ -305,9 +307,9 @@ def edit_config(config_id):
             # 更新配置，包括下载启用状态、更新模式和大小阈值
             db_handler.cursor.execute('''
                 UPDATE config 
-                SET config_name = ?, url = ?, username = ?, password = ?, rootpath = ?, target_directory = ?, download_enabled = ?, update_mode = ?, download_interval_range = ?
+                SET config_name = ?, url = ?, username = ?, password = ?, rootpath = ?, target_directory = ?, download_enabled = ?, update_mode = ?, download_interval_range = ?,public_url = ?, sign_enabled = ?
                 WHERE config_id = ?
-            ''', (config_name, url, username, password, rootpath, target_directory, download_enabled, update_mode, download_interval_range, config_id))
+            ''', (config_name, url, username, password, rootpath, target_directory, download_enabled, update_mode, download_interval_range, public_url, sign_enabled, config_id))
             db_handler.conn.commit()
 
             flash('配置已成功更新！', 'success')
@@ -315,7 +317,7 @@ def edit_config(config_id):
 
         # GET 请求时，获取并显示现有的配置项
         db_handler.cursor.execute('''
-            SELECT config_name, url, username, password, rootpath, target_directory, download_enabled, update_mode, download_interval_range 
+            SELECT config_name, url, username, password, rootpath, target_directory, download_enabled, update_mode, download_interval_range, public_url, sign_enabled 
             FROM config 
             WHERE config_id = ?
         ''', (config_id,))
@@ -343,8 +345,10 @@ def new_config():
             # 从表单中获取用户输入的数据
             config_name = request.form['config_name']
             url = request.form['url']
+            public_url = request.form['public_url']
             username = request.form['username']
             password = request.form['password']
+            sign_enabled = int(request.form.get('sign_enabled', 0)) # 获取是否启用AList的签名功能，默认0（禁用）
             rootpath = request.form['rootpath']
             target_directory = request.form['target_directory']
             download_interval_range = request.form.get('download_interval_range', '1-3')  # 保持为字符串
@@ -362,9 +366,9 @@ def new_config():
 
             # 插入新配置到数据库，确保所有字段都被插入
             db_handler.cursor.execute('''
-                INSERT INTO config (config_name, url, username, password, rootpath, target_directory, download_interval_range, download_enabled, update_mode) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (config_name, url, username, password, rootpath, target_directory, download_interval_range, download_enabled, update_mode))
+                INSERT INTO config (config_name, url, username, password, rootpath, target_directory, download_interval_range, download_enabled, update_mode, public_url, sign_enabled) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (config_name, url, username, password, rootpath, target_directory, download_interval_range, download_enabled, update_mode, public_url, sign_enabled))
             db_handler.conn.commit()
 
             flash('新配置已成功添加！', 'success')
@@ -381,7 +385,7 @@ def new_config():
 def copy_config(config_id):
     try:
         # 查询要复制的配置
-        db_handler.cursor.execute('SELECT config_name, url, username, password, rootpath, target_directory, download_interval_range, download_enabled, update_mode FROM config WHERE config_id = ?', (config_id,))
+        db_handler.cursor.execute('SELECT config_name, url, username, password, rootpath, target_directory, download_interval_range, download_enabled, update_mode, public_url, sign_enabled FROM config WHERE config_id = ?', (config_id,))
         config = db_handler.cursor.fetchone()
 
         if not config:
@@ -392,9 +396,9 @@ def copy_config(config_id):
         new_name = config[0] + " - 复制"
 
         db_handler.cursor.execute('''
-            INSERT INTO config (config_name, url, username, password, rootpath, target_directory, download_interval_range, download_enabled, update_mode) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (new_name, config[1], config[2], config[3], config[4], config[5], config[6], config[7], config[8]))
+            INSERT INTO config (config_name, url, username, password, rootpath, target_directory, download_interval_range, download_enabled, update_mode, public_url, sign_enabled) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (new_name, config[1], config[2], config[3], config[4], config[5], config[6], config[7], config[8], config[9], config[10]))
 
         # 提交事务
         db_handler.conn.commit()

@@ -28,6 +28,10 @@ COPY . .
 # 创建配置目录
 RUN mkdir /config
 
+# Dockerfile 末尾添加以下命令
+RUN mkdir -p /app/logs
+
+
 # 设置环境变量
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production

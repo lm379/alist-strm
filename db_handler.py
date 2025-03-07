@@ -21,10 +21,12 @@ class DBHandler:
                                 config_id INTEGER PRIMARY KEY AUTOINCREMENT, 
                                 config_name TEXT,  -- 配置名称，用于前端展示
                                 url TEXT, 
+                                public_url TEXT, -- AList 公共 URL，适用于非本地访问或docker容器方式
                                 username TEXT, 
                                 password TEXT, 
                                 rootpath TEXT,
                                 target_directory TEXT,
+                                sign_enabled INTEGER DEFAULT 0, -- 是否启用AList签名功能
                                 download_enabled INTEGER DEFAULT 1,
                                 download_interval_range TEXT
                                 )''')
@@ -51,6 +53,8 @@ class DBHandler:
         self.add_column_if_not_exists('user_config', 'size_threshold', 'INTEGER', default_value=100)
         self.add_column_if_not_exists('user_config', 'username', 'TEXT')
         self.add_column_if_not_exists('user_config', 'password', 'TEXT')
+        self.add_column_if_not_exists('config', 'sign_enabled', 'INTEGER', default_value=0)
+        self.add_column_if_not_exists('config', 'public_url', 'TEXT')
 
         # 如果 user_config 表为空，插入默认值
         self.insert_default_user_config()
@@ -141,7 +145,7 @@ class DBHandler:
 
     def get_webdav_config(self, config_id):
         self.cursor.execute('''
-            SELECT config_name, url, username, password, rootpath, target_directory, download_enabled, update_mode,  download_interval_range
+            SELECT config_name, url, username, password, rootpath, target_directory, download_enabled, update_mode, download_interval_range, public_url, sign_enabled
             FROM config
             WHERE config_id=? LIMIT 1
         ''', (config_id,))
@@ -149,17 +153,23 @@ class DBHandler:
         result = self.cursor.fetchone()
 
         if result:
-            config_name, url, username, password, rootpath, target_directory, download_enabled, update_mode, download_interval_range = result
+            config_name, url, username, password, rootpath, target_directory, download_enabled, update_mode, download_interval_range, public_url, sign_enabled = result
             parsed_url = urlparse(url)
+            parsed_public_url = urlparse(public_url)
 
             protocol = parsed_url.scheme
+            public_protocol = parsed_public_url.scheme
             host = parsed_url.hostname
+            public_host = parsed_public_url.hostname
             port = parsed_url.port if parsed_url.port else (80 if protocol == 'http' else 443)
-
+            public_port = parsed_public_url.port if parsed_public_url.port else (80 if public_protocol == 'http' else 443)
+            
             if download_enabled is None:
                 download_enabled = 1
 
-
+            # 默认禁用签名
+            if sign_enabled is None:
+                sign_enabled = 0
 
             # 解析下载间隔范围
             if download_interval_range:
@@ -178,7 +188,11 @@ class DBHandler:
                 'target_directory': target_directory,
                 'download_enabled': download_enabled,
                 'update_mode': update_mode,
-                'download_interval_range': (min_interval, max_interval)  # 返回最小和最大间隔
+                'download_interval_range': (min_interval, max_interval),  # 返回最小和最大间隔
+                'public_host': public_host,
+                'public_port': int(public_port),
+                'public_protocol': public_protocol,
+                'sign_enabled': sign_enabled
             }
         else:
             return None
