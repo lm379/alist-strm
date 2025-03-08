@@ -22,10 +22,10 @@ jobs:
         submodules: 'true'
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2 
+      uses: docker/setup-buildx-action@v3 
 
     - name: Login to Huawei Cloud SWR
       uses: huaweicloud/swr-login@v2.1.0
@@ -33,7 +33,7 @@ jobs:
         access-key-id: ${{ env.HUAWEI_KEY }} 
         access-key-secret: ${{ env.HUAWEI_SECRET }}
         region: ${{env.HUAWEI_REGION}} 
-        
+
     - name: Build and Push Docker Image
       uses: docker/build-push-action@v3
       env:
