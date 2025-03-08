@@ -37,6 +37,6 @@ jobs:
         context: .
         push: true
         platforms: linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6
-        tags: $SWR_REGISTRY/${{env.HUAWEI_NAME_SPACE}}/alist-strm:${IMAGE_TAG}
+        tags: ${{env.SWR_REGISTRY}}/${{env.HUAWEI_NAME_SPACE}}/alist-strm:${{env.IMAGE_TAG}}
         
         
