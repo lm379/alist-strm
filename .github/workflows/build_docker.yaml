@@ -31,7 +31,6 @@ jobs:
       run: |
         docker buildx create --name multi-platform --use --driver docker-container
         docker buildx inspect multi-platform --bootstrap
-        docker buildx use multi-platform
 
     - name: Login to Huawei Cloud SWR
       uses: huaweicloud/swr-login@v2.1.0
@@ -41,14 +40,13 @@ jobs:
         region: ${{ env.HUAWEI_REGION }}
 
     - name: Build and Push Docker Image
-      uses: docker/build-push-action@v3
+      # uses: docker/build-push-action@v3
       env:
         IMAGE_TAG: ${{ github.sha }} # 用于标记容器版本号
         SWR_REGISTRY: swr.${{ env.HUAWEI_REGION }}.myhuaweicloud.com
-      with:
-        context: .
-        push: true
-        platforms: linux/amd64
-        tags: ${{ env.SWR_REGISTRY }}/${{ env.HUAWEI_NAME_SPACE }}/alist-strm:${{ env.IMAGE_TAG }}
+      run: |
+        docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 -t ${{ env.SWR_REGISTRY }}/${{ env.HUAWEI_NAME_SPACE }}/alist-strm:${{ env.IMAGE_TAG }} --push .
+        docker buildx imagetools inspect ${{ env.SWR_REGISTRY }}/${{ env.HUAWEI_NAME_SPACE }}/alist-strm:${{ env.IMAGE_TAG }}
+      
 
 
