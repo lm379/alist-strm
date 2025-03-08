@@ -24,11 +24,8 @@ jobs:
       uses: docker/setup-buildx-action@v2 
     - name: Switch to docker-container driver
       run: |
-        docker buildx create \ 
-          --name multi-platform \ 
-          --use --platform \ 
-          linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6 \ 
-          --driver docker-container
+        docker buildx create --name multi-platform --use --driver docker-container
+        docker buildx inspect multi-platform --bootstrap
     - name: Login to Huawei Cloud SWR
       uses: huaweicloud/swr-login@v2.1.0
       with:
