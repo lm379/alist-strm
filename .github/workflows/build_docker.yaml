@@ -25,20 +25,25 @@ jobs:
       uses: docker/setup-qemu-action@v3
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3 
+      uses: docker/setup-buildx-action@v3
+
+    - name: Switch to docker-container driver
+      run: |
+        docker buildx create --name multi-platform --use --driver docker-container
+        docker buildx inspect multi-platform --bootstrap
 
     - name: Login to Huawei Cloud SWR
       uses: huaweicloud/swr-login@v2.1.0
       with:
         access-key-id: ${{ env.HUAWEI_KEY }} 
         access-key-secret: ${{ env.HUAWEI_SECRET }}
-        region: ${{env.HUAWEI_REGION}} 
+        region: ${{ env.HUAWEI_REGION }}
 
     - name: Build and Push Docker Image
       uses: docker/build-push-action@v3
       env:
         IMAGE_TAG: ${{ github.sha }} # 用于标记容器版本号
-        SWR_REGISTRY: swr.${{env.HUAWEI_REGION}}.myhuaweicloud.com
+        SWR_REGISTRY: swr.${{ env.HUAWEI_REGION }}.myhuaweicloud.com
       with:
         context: .
         push: true
