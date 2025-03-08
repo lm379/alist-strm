@@ -1,6 +1,10 @@
-name: actions
+name: Docker Build
 
-on: [push, pull_request] 
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 env:
   HUAWEI_KEY: ${{ secrets.HUAWEI_KEY }}
