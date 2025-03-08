@@ -2,22 +2,37 @@ name: actions
 
 on: [push, pull_request] 
 
+env:
+  HUAWEI_KEY: ${{ secrets.HUAWEI_KEY }}
+  HUAWEI_SECRET: ${{ secrets.HUAWEI_SECRET }}
+  HUAWEI_REGION: ${{ secrets.HUAWEI_REGION }}
+  HUAWEI_NAME_SPACE: ${{ secrets.HUAWEI_NAME_SPACE }}
+
 jobs:
-  bt-product-release:
+  build-docker:
     if: ${{ github.ref == 'refs/heads/main' }} 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2 
-    - name: Login to Aliyun Container Registry (ACR)
-      uses: aliyun/acr-login@v1 # 使用阿里云镜像服务action
+    - uses: actions/checkout@v3
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2 
+    - name: Login to Huawei Cloud SWR
+      uses: huaweicloud/swr-login@v2.1.0
       with:
-        login-server: registry.cn-chengdu.aliyuncs.com 
-        region-id: cn-chengdu 
-        username: "${{ secrets.REGISTRY_USERNAME }}" # 引用GitHub repo设置的镜像容器服务用户名
-        password: "${{ secrets.REGISTRY_PASSWORD }}" # 引用GitHub repo设置的镜像容器服务密码
+        access-key-id: ${{ env.HUAWEI_KEY }} 
+        access-key-secret: ${{ env.HUAWEI_SECRET }}
+        region: ${{env.HUAWEI_REGION}} 
     - name: Build and Push Docker Image
+      uses: docker/build-push-action@v3
       env:
-        IMAGE_TAG: latest # 用于标记容器版本号
-      run: |
-        docker build -t registry.cn-chengdu.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG .
-        docker push registry.cn-chengdu.aliyuncs.com/lm379/alist-strm:$IMAGE_TAG
+        IMAGE_TAG: ${{ github.sha }} # 用于标记容器版本号
+        SWR_REGISTRY: swr.${{env.HUAWEI_REGION}}.myhuaweicloud.com
+      with:
+        context: .
+        push: true
+        platforms: linux/amd64,linux/amd64/v2,linux/amd64/v3,linux/arm64,linux/riscv64,linux/ppc64le,linux/s390x,linux/386,linux/mips64le,linux/mips64,linux/loong64,linux/arm/v7,linux/arm/v6
+        tags: $SWR_REGISTRY/${{env.HUAWEI_NAME_SPACE}}/alist-strm:${IMAGE_TAG}
+        
+        

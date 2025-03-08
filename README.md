@@ -84,6 +84,12 @@ services:
 
 如果本地镜像拉取困难的可以前往镜像包下载地址下载后导入：[传送门](https://drive.tefuir0829.cn/d/tianyi-geren1/ruanjian/alist-strm.tar)
 
+或者使用镜像源
+```shell
+docker pull crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com/lm379/alist-strm:latest
+docker run -d --name alist-strm -p 18080:5000 -v /home:/home  -v /volume1/alist-strm/config:/config  crpi-mefcp83bif5rwsdn.cn-chengdu.personal.cr.aliyuncs.com/lm379/alist-strm:latest
+```
+
 导入方式就去百度啦 这里就不说啦
 
 ##  配置
